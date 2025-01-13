@@ -2,6 +2,7 @@
 Measuring Cross-Correlations, Contagion and Long-Range Behavior between Fires in Brazil and Some Time Series Related to Its Economic Growth
 
 Authors:Claudio Marcio Cassela Inacio, Jr., Vinicius V. Nogueira, António M. Lopes and Sergio Adriani David.
+DOI: https://doi.org/10.3390/fire5050148
 
 Abstract: Fires bring up the debate about their impact on Brazil’s economic growth. Some processing
 tools such as cointegration and, especially, the correlation have been applied for identifying possible
