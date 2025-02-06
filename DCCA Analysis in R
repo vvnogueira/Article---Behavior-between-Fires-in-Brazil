@@ -1,0 +1,160 @@
+#### Install libraries ###
+install.packages("DCCA")
+install.packages("tidyverse")
+install.packages("dplyr")
+install.packages("ggplot2")
+install.packages("readxl")
+install.packages("readr")
+install.packages("ellipsis")
+install.packages("fractaldim")
+install.packages("ggthemes")
+install.packages("Rcpp")
+install.packages("SlidingWindows")
+install.packages("XLConnect")
+#Require
+require(openxlsx)
+#Libs
+library(DCCA)
+library(tidyverse)
+library(dplyr)
+library(fractal)
+library(ggplot2)
+library(ggthemes)
+library(beepr)
+library(readxl)
+library(readr)
+library(ellipsis)
+library(fracdim)
+library(Rcpp)
+library(SlidingWindows)
+library(XLConnect)
+
+#Data 
+dados <- read_excel("C:Arquivo queimadas.xlsx")
+Queim_sub1 <- data.frame(x=dados$data[1:56], y=dados$queimada[1:56])
+Queim_sub2 <- data.frame(x=dados$data[57:108], y=dados$queimada[57:108])
+queim_sub1<- glimpse(Queim_sub1)
+queim_sub1$data <- as.Date(queim_sub1$x, format="%d/%m/%Y")
+queim_sub1$queimada <- as.numeric(queim_sub1$y)
+queim_sub1$x <- NULL
+queim_sub1$y <- NULL
+queim_sub2<- glimpse(Queim_sub2)
+queim_sub2$data <- as.Date(queim_sub2$x, format="%d/%m/%Y")
+queim_sub2$queimada <- as.numeric(queim_sub2$y)
+queim_sub2$x <- NULL
+queim_sub2$y <- NULL
+rm(Queim_sub1,Queim_sub2)
+
+glimpse(queim_sub1)
+glimpse(queim_sub2)
+
+
+dados2 <- read_excel("C:arquivo etanol.xlsx")
+Et_sub1 <- data.frame(x=dados2$data[1:56], y=dados2$etanol[1:56])
+Et_sub2 <- data.frame(x=dados2$data[57:108], y=dados2$etanol[57:108])
+Et_sub1<- glimpse(Et_sub1)
+Et_sub1$data <- as.Date(Et_sub1$data, format="%d/%m/%Y")
+Et_sub1$etanol <- as.numeric(Et_sub1$etanol)
+Et_sub1$x <- NULL
+Et_sub1$y <- NULL
+Et_sub2<- glimpse(Et_sub2)
+Et_sub2$data <- as.Date(Et_sub2$x, format="%d/%m/%Y")
+Et_sub2$etanol <- as.numeric(Et_sub2$y)
+Et_sub2$x <- NULL
+Et_sub2$y <- NULL
+
+
+glimpse(Et_sub1)
+glimpse(Et_sub2)
+
+#########################
+# # # Dynamic DCCA # # # 
+#########################
+# Function -> rhodcca.SlidingWindows(x, y, w = 99, k = 10, nu = 0)
+x = c(25:30) # Tamanho da Janela M?vel (T) -> x=c(start:end) 
+n = length(x) # Mostra o comprimento do range de w (Janela m?vel)
+lista1 <- list(0) # Criando uma lista
+
+#For para rodar o DCCA entre a os diferentes comprimentos de Janela M?vel(T)
+for (i in 1:n) {
+  rho_dyn <- rhodcca.SlidingWindows(queim_sub1$queimada, Et_sub1$etanol, w = x[i], k = 3)
+  lista1[i] <- list(rho_dyn[[3]])
+  print(x[i])
+  print(lista1[i])
+}
+rho_dyn$timescale
+lista1
+
+
+##################################
+### Automatizando estatistica ####
+##################################
+if(!require(dplyr))
+  install.packages("dplyr")
+library(dplyr)
+
+if(!require(psych))
+  install.packages("psych")
+library(psych)
+
+g <- numeric(n)
+z <- numeric(n)
+t <- vector()
+stat_list1  <- vector(mode = "list")
+stat_list2  <- vector(mode = "list")
+
+for (i in 1:n) {
+      g <- ncol(lista1[[i]]) #Quantas colunas tem cada lista
+      df <- data.frame(lista1[[i]]) # Criando varios data frames que guardar?o os dados
+      mat_df1 <- as.data.frame(df)
+      names(mat_df1) #Mostra os nomes das colunas
+      z <- 1:g
+      colnames(mat_df1) <- z #Renomeando as colunas do data.frame
+      stat_list1[[i]] <- subset(mat_df1)
+        for (j in 1:g) {
+           #Aplicando a f?rmula que vai fazer a estat?stica (descritivas)
+          t[1,j] <- media <- mean(stat_list1[[i]][j])
+          t[2,j] <- mediana <- median(stat_list1[[i]][j])
+          t[3,j] <-  maximo <- max(stat_list1[[i]][j])
+          t[4,j] <-  minimo <- min(stat_list1[[i]][j])
+          t[8,j] <-  desvio <- sd(stat_list1[[i]][j])
+          t[9,j] <-  descritivas <- c(media,mediana,maximo,minimo,desvio)
+           }
+      stat_list2[[i]] <- t
+      
+}
+rm(mat_df1,df,stat_list1) #Apagando as listas que n?o precisa mais usar
+
+#Exportando a lista para um excel para n=6 temos 6 abas (W) no excel 
+list_of_datasets <- list("W1" = stat_list2[[1]], "W2" = stat_list2[[2]], "W3"= stat_list2[[3]],"W4"= stat_list2[[4]],"W5"= stat_list2[[5]],"W6"= stat_list2[[6]])
+write.xlsx(list_of_datasets, file = "C:arquivo.xlsx")
+
+
+#########################################################
+#Fazendo um for() para renomear as colunas da lista #####
+#########################################################
+h <- numeric(n)
+g <- numeric(n)
+z <- numeric(n)
+k <- numeric(n)
+o <- vector()
+mat_list  <- vector(mode = "list") #criando uma lista para guardar os data.frames
+
+for (i in 1:n) {
+  h[i] <- ncol(lista1[[i]]) #Quantas colunas tem cada lista
+  k <- rep(3,h[i]) #criar um vetor com n?meros 3
+  g[i] <- (k + h[i]) #fazendo uma somat?ria para saber quantos elementos possuem em cada parte da lista
+  z <- 4:max(g[i]) #criando uma sequencia para o n para renomear as colunas dos data.frames
+    
+    df <- data.frame(lista1[[i]]) # Criando v?rios data frames que guardar?o os dados
+    
+    mat_df <- as.data.frame(df)
+    names(mat_df) #Mostra os nomes das colunas
+    mat_df
+    colnames(mat_df) <- z #Renomeando as colunas do data.frame
+    mat_list[[i]] <- subset(mat_df) #guardando os data_frames dentro da lista
+}
+
+#Exportando a lista para um excel para n=6 temos 6 abas (W) no excel 
+list_of_datasets <- list("W1" = mat_list[[1]], "W2" = mat_list[[2]], "W3"= mat_list[[3]],"W4"= mat_list[[4]],"W5"= mat_list[[5]],"W6"= mat_list[[6]])
+write.xlsx(list_of_datasets, file = "C:arquivo.xlsx")
