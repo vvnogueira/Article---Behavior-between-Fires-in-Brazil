@@ -1,6 +1,3 @@
-
----
-
 # README — Article *Behavior between Fires in Brazil*
 
 ```markdown
